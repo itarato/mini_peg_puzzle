@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using Unity.Collections;
 
 public class GameController : MonoBehaviour {
-    public GameObject shapePrefab; // Reference to the shape prefab
+    public GameObject shapePrefab;
+    public GameObject pegPrefab;
 
-    private List<GameObject> shapes = new List<GameObject>(); // List to hold the spawned shapes
+    private List<GameObject> shapes = new List<GameObject>();
+    private List<GameObject> pegs = new List<GameObject>();
 
     private List<List<GridCoord>> shapeCoords = new List<List<GridCoord>> {
         //new List<GridCoord> { new GridCoord(0, 0)}, // Test shape
@@ -18,28 +20,47 @@ public class GameController : MonoBehaviour {
         new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(1, 1), new GridCoord(2, 1) }, // Snake shape
     };
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    private List<GridCoord> shapeStartPositions = new List<GridCoord> {
+        //new GridCoord(-5, 3),
+
+        new GridCoord(-5, 2),
+        new GridCoord(-4, 0),
+        new GridCoord(-5, -2),
+        new GridCoord(5, 2),
+        new GridCoord(4, 0),
+        new GridCoord(5, -2),
+    };
+
+    private List<List<GridPath>> pegCoords = new List<List<GridPath>> {
+        new List<GridPath> { new GridPath(-2, 2, -1, 2), new GridPath(-2, 2, -2, 1), new GridPath(-2, 1, 1, 1), new GridPath(-1, 1, -1, -1) },
+        new List<GridPath> { new GridPath(-2, -1, -2, -2), new GridPath(-2, -2, 0, -2), new GridPath(0, -2, 0, 0), new GridPath(0, 0, 1, 0) },
+        new List<GridPath> { new GridPath(1, 2, 2, 2), new GridPath(2, 2, 2, -2), new GridPath(1, -2, 2, -2) },
+    };
+
     void Start() {
-        foreach (List<GridCoord> coords in shapeCoords) {
-            GameObject shape = Instantiate(shapePrefab, Vector3.zero, Quaternion.identity);
+        for (int i = 0; i < shapeCoords.Count; i++) {
+            GameObject shape = Instantiate(shapePrefab, new Vector3(shapeStartPositions[i].x, ShapeController.defaultY, shapeStartPositions[i].z), Quaternion.identity);
             ShapeController shapeController = shape.GetComponent<ShapeController>();
-            if (shapeController != null) {
-                shapeController.Init(coords);
-            }
+            shapeController.Init(shapeCoords[i], shapeStartPositions[i]);
             shapes.Add(shape);
         }
 
-        Debug.Log("GAME CTRL START");
+        foreach (List<GridPath> paths in pegCoords) {
+            GameObject peg = Instantiate(pegPrefab, new Vector3(paths[0].start.x, PegController.defaultY, paths[0].start.z), Quaternion.identity);
+            PegController petController = peg.GetComponent<PegController>();
+            petController.Init(paths);
+            pegs.Add(peg);
+        }
+
+        //Debug.Log("GAME CTRL START");
         EvaluateAllShapesPositions();
     }
 
-    // Update is called once per frame
     void Update() {
     }
 
     private void OnEnable() {
-        Debug.Log("GAME ON-ENABLE START");
-
+        //Debug.Log("GAME ON-ENABLE START");
         //Debug.Log("GameController enabled, subscribing to OnShapePositionChanged event.");
         ShapeController.OnShapePositionChanged += OnShapePositionChanged;
 

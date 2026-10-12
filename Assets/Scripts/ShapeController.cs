@@ -10,7 +10,7 @@ public class ShapeController : MonoBehaviour {
 
     private List<GameObject> shapes = new List<GameObject>();
 
-    private const float defaultY = 0f;
+    public const float defaultY = 0f;
 
     private bool isDragging;
     private Plane dragPlane = new Plane(Vector3.up, new Vector3(0f, defaultY, 0f));
@@ -21,11 +21,11 @@ public class ShapeController : MonoBehaviour {
     void Start() {
     }
 
-    public void Init(List<GridCoord> coords) {
+    public void Init(List<GridCoord> coords, GridCoord offset) {
         foreach (GridCoord coord in coords) {
-            GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x, defaultY, coord.z), Quaternion.identity);
+            GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x + offset.x, defaultY, coord.z + offset.z), Quaternion.identity,  transform);
             shapes.Add(shapeUnit);
-            shapeUnit.transform.SetParent(transform);
+            //shapeUnit.transform.SetParent(transform);
         }
 
         AdjustToGrid();

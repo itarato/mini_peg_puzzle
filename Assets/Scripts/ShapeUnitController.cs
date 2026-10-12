@@ -17,7 +17,6 @@ public class ShapeUnitController : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-
     }
 
     public void SetProblem(bool problem) {
