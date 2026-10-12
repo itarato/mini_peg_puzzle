@@ -1,8 +1,11 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class ShapeController : MonoBehaviour {
+    public static event Action<ShapeController> OnShapePositionChanged;
+
     public GameObject shapeUnitPrefab;
 
     private List<GameObject> shapes = new List<GameObject>();
@@ -24,6 +27,8 @@ public class ShapeController : MonoBehaviour {
             shapes.Add(shapeUnit);
             shapeUnit.transform.SetParent(transform);
         }
+
+        AdjustToGrid();
     }
 
     // Update is called once per frame
@@ -109,7 +114,31 @@ public class ShapeController : MonoBehaviour {
     }
 
     private void AdjustToGrid() {
-        Debug.Log("DROP");
         transform.position = new Vector3(Mathf.Round(transform.position.x), defaultY, Mathf.Round(transform.position.z));
+        OnShapePositionChanged?.Invoke(this);
+    }
+
+    public List<GridCoord> EvauluateGridCoords() {
+        List<GridCoord> gridCoords = new List<GridCoord>();
+
+        for (int i = 0; i < shapes.Count; i++) {
+            GameObject shapeUnit = shapes[i];
+            Vector3 position = shapeUnit.transform.position;
+            GridCoord gridCoord = new GridCoord(Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.z));
+            gridCoords.Add(gridCoord);
+
+            //Debug.Log($"Shape Unit {i}: Grid Coord ({gridCoord.x}, {gridCoord.z})");
+        }
+
+        return gridCoords;
+    }
+
+    public void SetProblem(bool problem) {
+        foreach (GameObject shape in shapes) {
+            ShapeUnitController shapeUnitController = shape.GetComponent<ShapeUnitController>();
+            if (shapeUnitController == null) continue;
+
+            shapeUnitController.SetProblem(problem);
+        }
     }
 }
