@@ -16,20 +16,14 @@ public class ShapeController : MonoBehaviour {
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start() {
-        GameObject shape1 = Instantiate(shapeUnitPrefab, new Vector3(0, 0, 0), Quaternion.identity);
-        GameObject shape2 = Instantiate(shapeUnitPrefab, new Vector3(1, 0, 0), Quaternion.identity);
-        GameObject shape3 = Instantiate(shapeUnitPrefab, new Vector3(0, 0, 1), Quaternion.identity);
-        GameObject shape4 = Instantiate(shapeUnitPrefab, new Vector3(0, 0, 2), Quaternion.identity);
+    }
 
-        shapes.Add(shape1);
-        shapes.Add(shape2);
-        shapes.Add(shape3);
-        shapes.Add(shape4);
-
-        shape1.transform.SetParent(transform);
-        shape2.transform.SetParent(transform);
-        shape3.transform.SetParent(transform);
-        shape4.transform.SetParent(transform);
+    public void Init(List<GridCoord> coords) {
+        foreach (GridCoord coord in coords) {
+            GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x, defaultY, coord.z), Quaternion.identity);
+            shapes.Add(shapeUnit);
+            shapeUnit.transform.SetParent(transform);
+        }
     }
 
     // Update is called once per frame
@@ -39,10 +33,12 @@ public class ShapeController : MonoBehaviour {
         if (isHovering) {
             if (Keyboard.current.spaceKey.wasPressedThisFrame) {
                 transform.RotateAround(GetCurrentMouseWorldPoint(), Vector3.left, 180f);
+                AdjustToGrid();
             }
 
             if (Keyboard.current.leftCtrlKey.wasPressedThisFrame) {
                 transform.RotateAround(GetCurrentMouseWorldPoint(), Vector3.up, 90f);
+                AdjustToGrid();
             }
         }
     }
@@ -63,16 +59,14 @@ public class ShapeController : MonoBehaviour {
         Ray ray = Camera.main.ScreenPointToRay(mousePosition);
         bool isHit = Physics.Raycast(ray, out RaycastHit hit);
 
-        if (isHit) {
+        if (isHit && (hit.transform == transform || hit.transform.IsChildOf(transform))) {
             if (Mouse.current.leftButton.wasPressedThisFrame) {
-                if (hit.transform == transform || hit.transform.IsChildOf(transform)) {
-                    isDragging = true;
+                isDragging = true;
 
-                    if (dragPlane.Raycast(ray, out float distance)) {
-                        Vector3 point = ray.GetPoint(distance);
-                        dragOffset = transform.position - point;
-                        dragOffset.y = 0f;
-                    }
+                if (dragPlane.Raycast(ray, out float distance)) {
+                    Vector3 point = ray.GetPoint(distance);
+                    dragOffset = transform.position - point;
+                    dragOffset.y = 0f;
                 }
             }
 
@@ -95,6 +89,7 @@ public class ShapeController : MonoBehaviour {
 
         if (Mouse.current.leftButton.wasReleasedThisFrame) {
             isDragging = false;
+            AdjustToGrid();
         }
     }
 
@@ -111,5 +106,10 @@ public class ShapeController : MonoBehaviour {
                 shapeUnitController.SetHighlight(highlight);
             }
         }
+    }
+
+    private void AdjustToGrid() {
+        Debug.Log("DROP");
+        transform.position = new Vector3(Mathf.Round(transform.position.x), defaultY, Mathf.Round(transform.position.z));
     }
 }
