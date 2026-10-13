@@ -118,7 +118,7 @@ public class ShapeController : MonoBehaviour {
         OnShapePositionChanged?.Invoke(this);
     }
 
-    public List<GridCoord> EvauluateGridCoords() {
+    public List<GridCoord> GridPositions() {
         List<GridCoord> gridCoords = new List<GridCoord>();
 
         for (int i = 0; i < shapes.Count; i++) {

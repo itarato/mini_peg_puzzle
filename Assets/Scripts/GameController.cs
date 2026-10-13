@@ -76,7 +76,13 @@ public class GameController : MonoBehaviour {
     }
 
     private void EvaluateAllShapesPositions() {
+        HashSet<GridCoord> pegCoords = new HashSet<GridCoord>();
         Dictionary<GridCoord, ShapeController> occupiedCoords = new Dictionary<GridCoord, ShapeController>();
+
+        foreach (GameObject peg in pegs) {
+            PegController pegController = peg.GetComponent<PegController>();
+            pegCoords.Add(pegController.GridPosition());
+        }
 
         foreach (GameObject shape in shapes) {
             ShapeController shapeController = shape.GetComponent<ShapeController>();
@@ -85,11 +91,13 @@ public class GameController : MonoBehaviour {
 
             shapeController.SetProblem(false);
 
-            foreach (GridCoord coord in shapeController.EvauluateGridCoords()) {
+            foreach (GridCoord coord in shapeController.GridPositions()) {
                 if (occupiedCoords.ContainsKey(coord)) {
                     shapeController.SetProblem(true);
                     occupiedCoords[coord].SetProblem(true);
                 } else {
+                    if (pegCoords.Contains(coord)) shapeController.SetProblem(true);
+
                     occupiedCoords.Add(coord, shapeController);
                 }
             }

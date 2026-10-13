@@ -26,10 +26,10 @@ public class ShapeUnitController : MonoBehaviour {
 
     private Material DefaultMaterial() {
         if (hasProblem) {
-            Debug.Log("ERROR MATERIAL");
+            //Debug.Log("ERROR MATERIAL");
             return errorMaterial;
         } else {
-            Debug.Log("DEFAULT MATERIAL");
+            //Debug.Log("DEFAULT MATERIAL");
             return defaultMaterial;
         }
     }
@@ -42,7 +42,7 @@ public class ShapeUnitController : MonoBehaviour {
     private void UpdateMaterial() {
         //Debug.Log($"ShapeUnitController: DefaultMaterial called. hasProblem={hasProblem}, hasHighlight={hasHighlight}");
         if (renderer == null) {
-            Debug.LogWarning("ShapeUnitController: Renderer is null, cannot update material.");
+            //Debug.LogWarning("ShapeUnitController: Renderer is null, cannot update material.");
             return;
         }
 

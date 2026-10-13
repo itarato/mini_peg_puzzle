@@ -36,6 +36,7 @@ public class PegController : MonoBehaviour {
         if (isHit && (hit.transform == transform || hit.transform.IsChildOf(transform))) {
             if (Mouse.current.leftButton.wasPressedThisFrame) {
                 isDragging = true;
+                //Debug.Log("Drag start");
 
                 if (dragPlane.Raycast(ray, out float distance)) {
                     Vector3 point = ray.GetPoint(distance);
@@ -57,14 +58,62 @@ public class PegController : MonoBehaviour {
         if (isDragging && Mouse.current.leftButton.isPressed) {
             if (dragPlane.Raycast(ray, out float distance)) {
                 Vector3 point = ray.GetPoint(distance);
-                transform.position = point + dragOffset;
+                Vector3 newPositionCandidate = point + dragOffset;
+
+                transform.position = GetOnLinePositionForCandidate(newPositionCandidate);
             }
         }
 
         if (Mouse.current.leftButton.wasReleasedThisFrame) {
             isDragging = false;
+            //Debug.Log("Drag end");
             AdjustToGrid();
         }
+    }
+
+    private Vector3 GetOnLinePositionForCandidate(Vector3 targetPosition) {
+        targetPosition = NormalizePosition(targetPosition);
+        List<GridPath> availablePathsForPosition = GetAvailablePathsForPosition(transform.position);
+        //Debug.Log("Available paths for position: " + availablePathsForPosition.Count + " Position: " + targetPosition);
+
+        Vector3 outPosition = transform.position;
+        float closestDistance = float.MaxValue;
+
+        for (int i = 0; i < availablePathsForPosition.Count; i++) {
+            GridPath path = availablePathsForPosition[i];
+            Vector3 candidate = path.GetClosestPointOnPath(targetPosition);
+
+            float distance = Vector3.Distance(targetPosition, candidate);
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                outPosition = candidate;
+            }
+        }
+
+        //Debug.Log("New position: " + outPosition);
+
+        return outPosition;
+    }
+
+    private Vector3 NormalizePosition(Vector3 position) {
+        return new Vector3(NormalizePointToGrid(position.x), position.y, NormalizePointToGrid(position.z));
+    }
+
+    private float NormalizePointToGrid(float v) {
+        float snapDistance = Mathf.Abs(Mathf.Round(v) - v);
+        if (snapDistance < 0.1f) {
+            return Mathf.Round(v);
+        } else {
+            return v;
+        }
+    }
+
+    private List<GridPath> GetAvailablePathsForPosition(Vector3 position) {
+        List<GridPath> availablePathsForPosition = new List<GridPath>();
+        foreach (GridPath path in availablePaths) {
+            if (path.IsPointOnPath(position)) availablePathsForPosition.Add(path);
+        }
+        return availablePathsForPosition;
     }
 
     private void SetHighlight(bool highlight) {
@@ -80,5 +129,9 @@ public class PegController : MonoBehaviour {
 
     private void AdjustToGrid() {
         transform.position = new Vector3(Mathf.Round(transform.position.x), defaultY, Mathf.Round(transform.position.z));
+    }
+
+    public GridCoord GridPosition() {
+        return new GridCoord(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.z));
     }
 }
