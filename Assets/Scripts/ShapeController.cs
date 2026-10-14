@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -8,6 +9,13 @@ public class ShapeController : MonoBehaviour {
 
     public GameObject shapeUnitPrefab;
     public GameObject connectorPrefab;
+
+    public Material defaultMaterial;
+    public Material highlightMaterial;
+    public Material errorMaterial;
+
+    private bool hasProblem = false;
+    private bool hasHighlight = false;
 
     private List<GameObject> shapes = new List<GameObject>();
     private List<GameObject> attachementObjects = new List<GameObject>();
@@ -21,6 +29,7 @@ public class ShapeController : MonoBehaviour {
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start() {
+        UpdateMaterial();
     }
 
     public void Init(List<GridCoord> coords, GridCoord offset) {
@@ -111,15 +120,6 @@ public class ShapeController : MonoBehaviour {
         }
     }
 
-    private void SetHighlight(bool highlight) {
-        foreach (GameObject shape in shapes) {
-            ShapeUnitController shapeUnitController = shape.GetComponent<ShapeUnitController>();
-            if (shapeUnitController != null) {
-                shapeUnitController.SetHighlight(highlight);
-            }
-        }
-    }
-
     private void AdjustToGrid() {
         transform.position = new Vector3(Mathf.Round(transform.position.x), defaultY, Mathf.Round(transform.position.z));
         OnShapePositionChanged?.Invoke(this);
@@ -138,12 +138,39 @@ public class ShapeController : MonoBehaviour {
         return gridCoords;
     }
 
-    public void SetProblem(bool problem) {
-        foreach (GameObject shape in shapes) {
-            ShapeUnitController shapeUnitController = shape.GetComponent<ShapeUnitController>();
-            if (shapeUnitController == null) continue;
 
-            shapeUnitController.SetProblem(problem);
+    public void SetProblem(bool problem) {
+        hasProblem = problem;
+        UpdateMaterial();
+    }
+
+    private Material DefaultMaterial() {
+        if (hasProblem) {
+            //Debug.Log("ERROR MATERIAL");
+            return errorMaterial;
+        } else {
+            //Debug.Log("DEFAULT MATERIAL");
+            return defaultMaterial;
+        }
+    }
+
+    public void SetHighlight(bool highlight) {
+        hasHighlight = highlight;
+        UpdateMaterial();
+    }
+
+    private void UpdateMaterial() {
+        foreach (GameObject shape in shapes) ApplyMaterialOnRenderer(shape.GetComponent<Renderer>());
+        foreach (GameObject attachementObject in attachementObjects) ApplyMaterialOnRenderer(attachementObject.GetComponent<Renderer>());
+    }
+
+    private void ApplyMaterialOnRenderer(Renderer renderer) {
+        if (renderer == null) return;
+
+        if (hasHighlight) {
+            renderer.material = highlightMaterial;
+        } else {
+            renderer.material = DefaultMaterial();
         }
     }
 }

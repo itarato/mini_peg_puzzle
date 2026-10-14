@@ -46,3 +46,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShapeController
   shapeUnitPrefab: {fileID: 3917857428025315774, guid: 04d6f3fd63db3304abe12e8e79f76ded, type: 3}
   connectorPrefab: {fileID: 7233036145035001275, guid: ef6fa6ef4f3f7ac4bb79c41b3f033b78, type: 3}
+  defaultMaterial: {fileID: 2100000, guid: a121e595be413fc4f93e29c9a7f2d9c7, type: 2}
+  highlightMaterial: {fileID: 2100000, guid: eb74b8d11682f564ea3efb4fe2da2be1, type: 2}
+  errorMaterial: {fileID: 2100000, guid: be024e7754af4f842834143fa7d3ca74, type: 2}
