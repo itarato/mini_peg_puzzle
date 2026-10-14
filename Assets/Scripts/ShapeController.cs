@@ -7,8 +7,10 @@ public class ShapeController : MonoBehaviour {
     public static event Action<ShapeController> OnShapePositionChanged;
 
     public GameObject shapeUnitPrefab;
+    public GameObject connectorPrefab;
 
     private List<GameObject> shapes = new List<GameObject>();
+    private List<GameObject> attachementObjects = new List<GameObject>();
 
     public const float defaultY = 0f;
 
@@ -23,9 +25,20 @@ public class ShapeController : MonoBehaviour {
 
     public void Init(List<GridCoord> coords, GridCoord offset) {
         foreach (GridCoord coord in coords) {
-            GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x + offset.x, defaultY, coord.z + offset.z), Quaternion.identity,  transform);
+            GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x + offset.x, defaultY, coord.z + offset.z), Quaternion.identity, transform);
             shapes.Add(shapeUnit);
-            //shapeUnit.transform.SetParent(transform);
+
+            foreach (GridCoord otherCoord in coords) {
+                if (otherCoord.x == coord.x && otherCoord.z == coord.z + 1) {
+                    GameObject connector = Instantiate(connectorPrefab, new Vector3(coord.x + offset.x, defaultY, coord.z + offset.z + 0.5f), Quaternion.Euler(90f, 0f, 0f), transform);
+                    attachementObjects.Add(connector);
+                } else if (otherCoord.z == coord.z && otherCoord.x == coord.x + 1) {
+                    GameObject connector = Instantiate(connectorPrefab, new Vector3(coord.x + offset.x + 0.5f, defaultY, coord.z + offset.z), Quaternion.Euler(90f, 90f, 0f), transform);
+                    attachementObjects.Add(connector);
+                } else {
+                    continue;
+                }
+            }
         }
 
         AdjustToGrid();
@@ -98,12 +111,6 @@ public class ShapeController : MonoBehaviour {
         }
     }
 
-    //private void OnGUI() {
-    //    GUILayout.BeginArea(new Rect(10, 10, 300, 140), GUI.skin.box);
-    //    GUILayout.Label($"Position: {transform.position:F2}");
-    //    GUILayout.EndArea();
-    //}
-
     private void SetHighlight(bool highlight) {
         foreach (GameObject shape in shapes) {
             ShapeUnitController shapeUnitController = shape.GetComponent<ShapeUnitController>();
@@ -126,8 +133,6 @@ public class ShapeController : MonoBehaviour {
             Vector3 position = shapeUnit.transform.position;
             GridCoord gridCoord = new GridCoord(Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.z));
             gridCoords.Add(gridCoord);
-
-            //Debug.Log($"Shape Unit {i}: Grid Coord ({gridCoord.x}, {gridCoord.z})");
         }
 
         return gridCoords;

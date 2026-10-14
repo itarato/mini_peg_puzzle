@@ -45,4 +45,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShapeController
   shapeUnitPrefab: {fileID: 3917857428025315774, guid: 04d6f3fd63db3304abe12e8e79f76ded, type: 3}
-  dragHeight: 1
+  connectorPrefab: {fileID: 7233036145035001275, guid: ef6fa6ef4f3f7ac4bb79c41b3f033b78, type: 3}
