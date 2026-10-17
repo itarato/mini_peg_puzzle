@@ -13,6 +13,8 @@ public class PegController : MonoBehaviour {
     private Plane dragPlane = new Plane(Vector3.up, new Vector3(0f, defaultY, 0f));
     private Vector3 dragOffset = Vector3.zero;
 
+    private bool isFixed = false;
+
     public void Init(List<GridPath> availablePaths) {
         this.availablePaths = availablePaths;
     }
@@ -28,6 +30,8 @@ public class PegController : MonoBehaviour {
     }
 
     private void HandleMouseOperations() {
+        if (isFixed) return;
+
         Vector2 mousePosition = Mouse.current.position.ReadValue();
         Ray ray = Camera.main.ScreenPointToRay(mousePosition);
         bool isHit = Physics.Raycast(ray, out RaycastHit hit);
@@ -73,8 +77,7 @@ public class PegController : MonoBehaviour {
     private Vector3 GetOnLinePositionForCandidate(Vector3 targetPosition) {
         targetPosition = NormalizePosition(targetPosition);
         List<GridPath> availablePathsForPosition = GetAvailablePathsForPosition(transform.position);
-        //Debug.Log("Available paths for position: " + availablePathsForPosition.Count + " Position: " + targetPosition);
-
+        
         Vector3 outPosition = transform.position;
         float closestDistance = float.MaxValue;
 
@@ -88,8 +91,6 @@ public class PegController : MonoBehaviour {
                 outPosition = candidate;
             }
         }
-
-        //Debug.Log("New position: " + outPosition);
 
         return outPosition;
     }
@@ -132,5 +133,10 @@ public class PegController : MonoBehaviour {
 
     public GridCoord GridPosition() {
         return new GridCoord(Mathf.RoundToInt(transform.position.x), Mathf.RoundToInt(transform.position.z));
+    }
+
+    public void SetFixedPosition(GridCoord position) {
+        transform.position = new Vector3(position.x, defaultY, position.z);
+        isFixed = true;
     }
 }

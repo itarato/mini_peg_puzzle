@@ -1,5 +1,4 @@
 using System;
-using UnityEngine;
 
 public class GridCoord : IEquatable<GridCoord> {
     public int x;

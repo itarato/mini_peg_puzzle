@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Unity.Collections;
+using System.IO;
 
 public class GameController : MonoBehaviour {
     public GameObject shapePrefab;
@@ -10,14 +10,12 @@ public class GameController : MonoBehaviour {
     private List<GameObject> pegs = new List<GameObject>();
 
     private List<List<GridCoord>> shapeCoords = new List<List<GridCoord>> {
-        //new List<GridCoord> { new GridCoord(0, 0)}, // Test shape
-
         new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(0, 1), new GridCoord(0, 2) }, // L shape
         new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(0, 1) }, // Mini L shape
-        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(0, 1), new GridCoord(1, 1) }, // Square shape
-        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(2, 0) }, // Line shape
-        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(-1, 0), new GridCoord(0, 1) }, // T shape
+        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(0, 1), new GridCoord(0, 2) }, // Line shape
         new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(1, 1), new GridCoord(2, 1) }, // Snake shape
+        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(0, 1), new GridCoord(1, 1) }, // Square shape
+        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(2, 0), new GridCoord(1, 1) }, // T shape
     };
 
     private List<GridCoord> shapeStartPositions = new List<GridCoord> {
@@ -54,6 +52,8 @@ public class GameController : MonoBehaviour {
 
         //Debug.Log("GAME CTRL START");
         EvaluateAllShapesPositions();
+
+        SetupLevel(0);
     }
 
     void Update() {
@@ -101,6 +101,33 @@ public class GameController : MonoBehaviour {
                     occupiedCoords.Add(coord, shapeController);
                 }
             }
+        }
+    }
+
+    public void SetupLevel(int level) {
+        string[] lines = File.ReadAllLines("Assets/Levels/solutions.dat");
+        string encoded = lines[level];
+
+        string[] shape_parts_raw = encoded.Split(';');
+
+        //for (int i = 0; i < 6; i++) {
+        //    string[] shape_parts = shape_parts_raw[i].Split(',');
+        //    int x = int.Parse(shape_parts[0]);
+        //    int z = int.Parse(shape_parts[1]);
+        //    float rotation = float.Parse(shape_parts[2]);
+        //    ShapeController shapeController = shapes[i].GetComponent<ShapeController>();
+        //    //shapeController.SetGridPosition(new GridCoord(x, z));
+        //    //shapeController.SetRotation(rotation);
+        //}
+
+
+        string[] peg_parts = shape_parts_raw[6].Split(',');
+        for (int i = 0; i < 3; i++) {
+            int mask = int.Parse(peg_parts[i]);
+            int pegx = (mask % 5) - 2;
+            int pegz = (mask / 5) - 2;
+            PegController pegController = pegs[i].GetComponent<PegController>();
+            pegController.SetFixedPosition(new GridCoord(pegx, pegz));
         }
     }
 }
