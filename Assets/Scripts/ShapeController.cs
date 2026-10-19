@@ -1,6 +1,6 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -25,17 +25,30 @@ public class ShapeController : MonoBehaviour {
     private bool isDragging;
     private Plane dragPlane = new Plane(Vector3.up, new Vector3(0f, defaultY, 0f));
     private Vector3 dragOffset;
-    private bool isHovering = false;
+
+    private ShapeUnitController lastTouchedUnit;
+    private bool isTouchedThisFrame = false;
+    private bool isReleasedThisFrame = false;
+    private bool isDoubleTouchedThisFrame = false;
+
+    private bool isMirrored = false;
+
+    private GameController gameController;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start() {
         UpdateMaterial();
     }
 
-    public void Init(List<GridCoord> coords, GridCoord offset) {
+    public void Init(List<GridCoord> coords, GridCoord offset, GameController gameController) {
+        this.gameController = gameController;
+
         foreach (GridCoord coord in coords) {
             GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x + offset.x, defaultY, coord.z + offset.z), Quaternion.identity, transform);
             shapes.Add(shapeUnit);
+
+            ShapeUnitController shapeUnitController = shapeUnit.GetComponent<ShapeUnitController>();
+            shapeUnitController.SetParent(this);
 
             foreach (GridCoord otherCoord in coords) {
                 if (otherCoord.x == coord.x && otherCoord.z == coord.z + 1) {
@@ -53,76 +66,121 @@ public class ShapeController : MonoBehaviour {
         AdjustToGrid();
     }
 
-    // Update is called once per frame
     void Update() {
-        HandleMouseOperations();
+        HandleTouchOperations();
 
-        if (isHovering) {
-            if (Keyboard.current.spaceKey.wasPressedThisFrame) {
-                transform.RotateAround(GetCurrentMouseWorldPoint(), Vector3.left, 180f);
-                AdjustToGrid();
-            }
+        if (isDoubleTouchedThisFrame) Rotate();
 
-            if (Keyboard.current.leftCtrlKey.wasPressedThisFrame) {
-                transform.RotateAround(GetCurrentMouseWorldPoint(), Vector3.up, 90f);
-                AdjustToGrid();
-            }
+        isReleasedThisFrame = false;
+        isTouchedThisFrame = false;
+        isDoubleTouchedThisFrame = false;
+    }
+
+    public void ResetMirror() {
+        if (!isMirrored) return;
+
+        Mirror();
+    }
+
+    public void Rotate() {
+        Quaternion targetRotation = transform.rotation * Quaternion.Euler(0f, 90f, 0f);
+
+        Vector3 unitPos = lastTouchedUnit.transform.position - transform.position;
+        Vector3 diff = new Vector3(unitPos.x - unitPos.z, defaultY, unitPos.x + unitPos.z);
+        Vector3 targetPosition = transform.position + diff;
+
+        StartCoroutine(RotateRoutine(targetRotation, targetPosition, 0.3f));
+    }
+
+    public void Mirror() {
+        transform.RotateAround(lastTouchedUnit.transform.position, Vector3.left, 180f);
+        AdjustToGrid();
+    }
+
+    IEnumerator RotateRoutine(Quaternion targetRotation, Vector3 targetPosition, float time) {
+        Quaternion startRotation = transform.rotation;
+        Vector3 startPosition = transform.position;
+        float elapsedTime = 0f;
+
+        while (elapsedTime < time) {
+            elapsedTime += Time.deltaTime;
+            float t = elapsedTime / time;
+
+            transform.rotation = Quaternion.Lerp(startRotation, targetRotation, t);
+            transform.position = Vector3.Lerp(startPosition, targetPosition, t);
+
+            yield return null;
         }
+
+        transform.rotation = targetRotation;
+        transform.position = targetPosition;
+
+        AdjustToGrid();
+    }
+
+    public void OnUnitTouch(ShapeUnitController unit, bool isDouble) {
+        gameController.SetLastTouchedShape(this);
+
+        if (isDouble) {
+            isDoubleTouchedThisFrame = true;
+        } else {
+            isTouchedThisFrame = true;
+        }
+
+        lastTouchedUnit = unit;
+    }
+
+    public void OnUnitRelease() {
+        isReleasedThisFrame = true;
     }
 
     private Vector3 GetCurrentMouseWorldPoint() {
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        Vector2 mousePosition = TouchPosition();
         Ray ray = Camera.main.ScreenPointToRay(mousePosition);
         if (dragPlane.Raycast(ray, out float distance)) {
             Vector3 point = ray.GetPoint(distance);
             point.y = defaultY;
             return point;
         }
+
         return Vector3.zero;
     }
 
-    private void HandleMouseOperations() {
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
-        Ray ray = Camera.main.ScreenPointToRay(mousePosition);
-        bool isHit = Physics.Raycast(ray, out RaycastHit hit);
+    private Vector2 TouchPosition() {
+        if (Touchscreen.current != null) {
+            return Touchscreen.current.position.ReadValue();
+        } else {
+            return Mouse.current.position.ReadValue();
+        }
+    }
 
-        if (isHit && (hit.transform == transform || hit.transform.IsChildOf(transform))) {
-            if (Mouse.current.leftButton.wasPressedThisFrame) {
-                isDragging = true;
+    private void HandleTouchOperations() {
+        if (isTouchedThisFrame) {
+            gameController.ClearAllShapeHighlights();
 
-                if (dragPlane.Raycast(ray, out float distance)) {
-                    Vector3 point = ray.GetPoint(distance);
-                    dragOffset = transform.position - point;
-                    dragOffset.y = 0f;
-                }
-            }
-
-            if (!isHovering) {
-                SetHighlight(true);
-                isHovering = true;
-            }
-        } else if (isHovering && !isDragging) {
-            SetHighlight(false);
-            isHovering = false;
+            isDragging = true;
+            Vector3 mouseWorldPoint = GetCurrentMouseWorldPoint();
+            dragOffset = transform.position - mouseWorldPoint;
+            dragOffset.y = 0f;
+            SetHighlight(true);
         }
 
-
-        if (isDragging && Mouse.current.leftButton.isPressed) {
-            if (dragPlane.Raycast(ray, out float distance)) {
-                Vector3 point = ray.GetPoint(distance);
-                transform.position = point + dragOffset;
-            }
-        }
-
-        if (Mouse.current.leftButton.wasReleasedThisFrame) {
+        if (isReleasedThisFrame) {
             isDragging = false;
             AdjustToGrid();
+        }
+
+        if (isDragging) {
+            Vector3 mouseWorldPoint = GetCurrentMouseWorldPoint();
+            transform.position = mouseWorldPoint + dragOffset;
         }
     }
 
     private void AdjustToGrid() {
         transform.position = new Vector3(Mathf.Round(transform.position.x), defaultY, Mathf.Round(transform.position.z));
         OnShapePositionChanged?.Invoke(this);
+
+        // TODO: Adjust rotation
     }
 
     public List<GridCoord> GridPositions() {
@@ -146,10 +204,8 @@ public class ShapeController : MonoBehaviour {
 
     private Material DefaultMaterial() {
         if (hasProblem) {
-            //Debug.Log("ERROR MATERIAL");
             return errorMaterial;
         } else {
-            //Debug.Log("DEFAULT MATERIAL");
             return defaultMaterial;
         }
     }

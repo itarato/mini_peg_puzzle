@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
+using System;
 
 public class GameController : MonoBehaviour {
     public GameObject shapePrefab;
@@ -8,6 +9,8 @@ public class GameController : MonoBehaviour {
 
     private List<GameObject> shapes = new List<GameObject>();
     private List<GameObject> pegs = new List<GameObject>();
+
+    private ShapeController lastTouchedShape;
 
     private List<List<GridCoord>> shapeCoords = new List<List<GridCoord>> {
         new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(0, 1), new GridCoord(0, 2) }, // L shape
@@ -19,14 +22,12 @@ public class GameController : MonoBehaviour {
     };
 
     private List<GridCoord> shapeStartPositions = new List<GridCoord> {
-        //new GridCoord(-5, 3),
-
-        new GridCoord(-5, 2),
-        new GridCoord(-4, 0),
-        new GridCoord(-5, -2),
-        new GridCoord(5, 2),
-        new GridCoord(4, 0),
-        new GridCoord(5, -2),
+        new GridCoord(-3, 7),
+        new GridCoord(-2, 5),
+        new GridCoord(-3, 3),
+        new GridCoord(0, 7),
+        new GridCoord(1, 5),
+        new GridCoord(0, 3),
     };
 
     private List<List<GridPath>> pegCoords = new List<List<GridPath>> {
@@ -39,7 +40,7 @@ public class GameController : MonoBehaviour {
         for (int i = 0; i < shapeCoords.Count; i++) {
             GameObject shape = Instantiate(shapePrefab, new Vector3(shapeStartPositions[i].x, ShapeController.defaultY, shapeStartPositions[i].z), Quaternion.identity);
             ShapeController shapeController = shape.GetComponent<ShapeController>();
-            shapeController.Init(shapeCoords[i], shapeStartPositions[i]);
+            shapeController.Init(shapeCoords[i], shapeStartPositions[i], this);
             shapes.Add(shape);
         }
 
@@ -50,20 +51,29 @@ public class GameController : MonoBehaviour {
             pegs.Add(peg);
         }
 
-        //Debug.Log("GAME CTRL START");
+        lastTouchedShape = shapes[0].GetComponent<ShapeController>();
+
         EvaluateAllShapesPositions();
 
-        SetupLevel(0);
+        SetupRandomLevel();
+    }
+
+    public void SetLastTouchedShape(ShapeController shape) {
+        lastTouchedShape = shape;
     }
 
     void Update() {
     }
 
-    private void OnEnable() {
-        //Debug.Log("GAME ON-ENABLE START");
-        //Debug.Log("GameController enabled, subscribing to OnShapePositionChanged event.");
-        ShapeController.OnShapePositionChanged += OnShapePositionChanged;
+    private void MoveShapesToStartPosition() {
+        for (int i = 0; i < shapes.Count; i++) {
+            shapes[i].transform.position = new Vector3(shapeStartPositions[i].x, ShapeController.defaultY, shapeStartPositions[i].z);
+            shapes[i].transform.rotation = Quaternion.identity;
+        }
+    }
 
+    private void OnEnable() {
+        ShapeController.OnShapePositionChanged += OnShapePositionChanged;
     }
 
     private void OnDisable() {
@@ -71,7 +81,6 @@ public class GameController : MonoBehaviour {
     }
 
     private void OnShapePositionChanged(ShapeController shapeController) {
-        //Debug.Log("Shape position changed, re-evaluating all shapes.");
         EvaluateAllShapesPositions();
     }
 
@@ -104,10 +113,13 @@ public class GameController : MonoBehaviour {
         }
     }
 
-    public void SetupLevel(int level) {
-        string[] lines = File.ReadAllLines("Assets/Levels/solutions.dat");
-        string encoded = lines[level];
+    public void SetupRandomLevel() {
+        System.Random rand = new System.Random();
+        SetupLevel(rand.Next(0, 6884));
+    }
 
+    public void SetupLevel(int level) {
+        string encoded = LoadLevelString(level);
         string[] shape_parts_raw = encoded.Split(';');
 
         //for (int i = 0; i < 6; i++) {
@@ -120,7 +132,6 @@ public class GameController : MonoBehaviour {
         //    //shapeController.SetRotation(rotation);
         //}
 
-
         string[] peg_parts = shape_parts_raw[6].Split(',');
         for (int i = 0; i < 3; i++) {
             int mask = int.Parse(peg_parts[i]);
@@ -128,6 +139,33 @@ public class GameController : MonoBehaviour {
             int pegz = (mask / 5) - 2;
             PegController pegController = pegs[i].GetComponent<PegController>();
             pegController.SetFixedPosition(new GridCoord(pegx, pegz));
+        }
+
+        MoveShapesToStartPosition();
+    }
+
+    private string LoadLevelString(int level) {
+        TextAsset content = Resources.Load<TextAsset>("solutions");
+        if (content == null) {
+            Debug.LogError("File not found");
+            return "";
+        }
+
+        string[] lines = content.text.Split("\n");
+        return lines[level];
+    }
+
+    public void RotateLastTouchedShape() {
+        lastTouchedShape.Rotate();
+    }
+
+    public void MirrorLastTouchedShape() {
+        lastTouchedShape.Mirror();
+    }
+
+    public void ClearAllShapeHighlights() {
+        foreach (GameObject shape in shapes) {
+            shape.GetComponent<ShapeController>().SetHighlight(false);
         }
     }
 }
