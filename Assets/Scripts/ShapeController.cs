@@ -17,8 +17,8 @@ public class ShapeController : MonoBehaviour {
     private bool hasProblem = false;
     private bool hasHighlight = false;
 
-    private List<GameObject> shapes = new List<GameObject>();
-    private List<GameObject> attachementObjects = new List<GameObject>();
+    private List<GameObject> units = new List<GameObject>();
+    private List<GameObject> connectors = new List<GameObject>();
 
     public const float defaultY = 0f;
 
@@ -40,30 +40,11 @@ public class ShapeController : MonoBehaviour {
         UpdateMaterial();
     }
 
-    public void Init(List<GridCoord> coords, GridCoord offset, GameController gameController) {
+    public void Init(List<GridCoord> coords, GameController gameController) {
         this.gameController = gameController;
+        originalCoords = coords;
 
-        foreach (GridCoord coord in coords) {
-            GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x + offset.x, defaultY, coord.z + offset.z), Quaternion.identity, transform);
-            shapes.Add(shapeUnit);
-
-            ShapeUnitController shapeUnitController = shapeUnit.GetComponent<ShapeUnitController>();
-            shapeUnitController.SetParent(this);
-
-            foreach (GridCoord otherCoord in coords) {
-                if (otherCoord.x == coord.x && otherCoord.z == coord.z + 1) {
-                    GameObject connector = Instantiate(connectorPrefab, new Vector3(coord.x + offset.x, defaultY, coord.z + offset.z + 0.5f), Quaternion.Euler(90f, 0f, 0f), transform);
-                    attachementObjects.Add(connector);
-                } else if (otherCoord.z == coord.z && otherCoord.x == coord.x + 1) {
-                    GameObject connector = Instantiate(connectorPrefab, new Vector3(coord.x + offset.x + 0.5f, defaultY, coord.z + offset.z), Quaternion.Euler(90f, 90f, 0f), transform);
-                    attachementObjects.Add(connector);
-                } else {
-                    continue;
-                }
-            }
-        }
-
-        AdjustToGrid();
+        Reset();
     }
 
     void Update() {
@@ -77,6 +58,42 @@ public class ShapeController : MonoBehaviour {
     }
 
     public void Reset() {
+        ResetFrom(originalCoords);
+    }
+
+    private void ResetFrom(List<GridCoord> unitCoords) {
+        foreach (var shape in units) Destroy(shape);
+        foreach (var connector in connectors) Destroy(connector);
+
+        units.Clear();
+        connectors.Clear();
+
+        foreach (GridCoord coord in unitCoords) {
+            GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x, defaultY, coord.z), Quaternion.identity);
+            shapeUnit.transform.SetParent(transform, false);
+            units.Add(shapeUnit);
+
+            ShapeUnitController shapeUnitController = shapeUnit.GetComponent<ShapeUnitController>();
+            shapeUnitController.SetParent(this);
+
+            foreach (GridCoord otherCoord in unitCoords) {
+                GameObject connector;
+
+                if (otherCoord.x == coord.x && otherCoord.z == coord.z + 1) {
+                    connector = Instantiate(connectorPrefab, new Vector3(coord.x, defaultY, coord.z + 0.5f), Quaternion.Euler(90f, 0f, 0f));
+                    connectors.Add(connector);
+                } else if (otherCoord.z == coord.z && otherCoord.x == coord.x + 1) {
+                    connector = Instantiate(connectorPrefab, new Vector3(coord.x + 0.5f, defaultY, coord.z), Quaternion.Euler(90f, 90f, 0f));
+                    connectors.Add(connector);
+                } else {
+                    continue;
+                }
+
+                connector.transform.SetParent(transform, false);
+            }
+        }
+
+        AdjustToGrid();
     }
 
     public void Rotate() {
@@ -86,12 +103,37 @@ public class ShapeController : MonoBehaviour {
         Vector3 diff = new Vector3(unitPos.x - unitPos.z, defaultY, unitPos.x + unitPos.z);
         Vector3 targetPosition = transform.position + diff;
 
-        StartCoroutine(RotateRoutine(targetRotation, targetPosition, 0.3f));
+        StartCoroutine(RotateRoutine(targetRotation, targetPosition, 0.2f));
     }
 
     public void Mirror() {
-        transform.RotateAround(lastTouchedUnit.transform.position, Vector3.left, 180f);
         AdjustToGrid();
+
+        int minx = int.MaxValue;
+        int maxx = int.MinValue;
+
+        foreach (var unit in units) {
+            minx = Math.Min(minx, Mathf.RoundToInt(unit.transform.position.x));
+            maxx = Math.Max(maxx, Mathf.RoundToInt(unit.transform.position.x));
+        }
+
+        foreach (var unit in units) {
+            unit.transform.position = new Vector3(
+                minx + maxx - unit.transform.position.x,
+                unit.transform.position.y,
+                unit.transform.position.z
+            );
+        }
+
+        foreach (var connector in connectors) {
+            connector.transform.position = new Vector3(
+                minx + maxx - connector.transform.position.x,
+                connector.transform.position.y,
+                connector.transform.position.z
+            );
+        }
+
+        Debug.Log("Mirrored");
     }
 
     IEnumerator RotateRoutine(Quaternion targetRotation, Vector3 targetPosition, float time) {
@@ -183,8 +225,8 @@ public class ShapeController : MonoBehaviour {
     public List<GridCoord> GridPositions() {
         List<GridCoord> gridCoords = new List<GridCoord>();
 
-        for (int i = 0; i < shapes.Count; i++) {
-            GameObject shapeUnit = shapes[i];
+        for (int i = 0; i < units.Count; i++) {
+            GameObject shapeUnit = units[i];
             Vector3 position = shapeUnit.transform.position;
             GridCoord gridCoord = new GridCoord(Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.z));
             gridCoords.Add(gridCoord);
@@ -213,8 +255,8 @@ public class ShapeController : MonoBehaviour {
     }
 
     private void UpdateMaterial() {
-        foreach (GameObject shape in shapes) ApplyMaterialOnRenderer(shape.GetComponent<Renderer>());
-        foreach (GameObject attachementObject in attachementObjects) ApplyMaterialOnRenderer(attachementObject.GetComponent<Renderer>());
+        foreach (GameObject shape in units) ApplyMaterialOnRenderer(shape.GetComponent<Renderer>());
+        foreach (GameObject connectors in connectors) ApplyMaterialOnRenderer(connectors.GetComponent<Renderer>());
     }
 
     private void ApplyMaterialOnRenderer(Renderer renderer) {

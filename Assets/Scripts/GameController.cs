@@ -22,12 +22,12 @@ public class GameController : MonoBehaviour {
     };
 
     private List<GridCoord> shapeStartPositions = new List<GridCoord> {
-        new GridCoord(-3, 7),
-        new GridCoord(-2, 5),
-        new GridCoord(-3, 3),
-        new GridCoord(0, 7),
-        new GridCoord(1, 5),
-        new GridCoord(0, 3),
+        new GridCoord(-3, -6),
+        new GridCoord(-1, 6),
+        new GridCoord(-3, 4),
+        new GridCoord(-1, -5),
+        new GridCoord(2, -6),
+        new GridCoord(1, 4),
     };
 
     private List<List<GridPath>> pegCoords = new List<List<GridPath>> {
@@ -40,7 +40,7 @@ public class GameController : MonoBehaviour {
         for (int i = 0; i < shapeCoords.Count; i++) {
             GameObject shape = Instantiate(shapePrefab, new Vector3(shapeStartPositions[i].x, ShapeController.defaultY, shapeStartPositions[i].z), Quaternion.identity);
             ShapeController shapeController = shape.GetComponent<ShapeController>();
-            shapeController.Init(shapeCoords[i], shapeStartPositions[i], this);
+            shapeController.Init(shapeCoords[i], this);
             shapes.Add(shape);
         }
 
@@ -65,10 +65,12 @@ public class GameController : MonoBehaviour {
     void Update() {
     }
 
-    private void MoveShapesToStartPosition() {
+    private void ResetShapePositions() {
         for (int i = 0; i < shapes.Count; i++) {
             shapes[i].transform.position = new Vector3(shapeStartPositions[i].x, ShapeController.defaultY, shapeStartPositions[i].z);
             shapes[i].transform.rotation = Quaternion.identity;
+
+            shapes[i].GetComponent<ShapeController>().Reset();
         }
     }
 
@@ -141,7 +143,7 @@ public class GameController : MonoBehaviour {
             pegController.SetFixedPosition(new GridCoord(pegx, pegz));
         }
 
-        MoveShapesToStartPosition();
+        ResetShapePositions();
     }
 
     private string LoadLevelString(int level) {
