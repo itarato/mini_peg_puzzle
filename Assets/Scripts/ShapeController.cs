@@ -31,9 +31,9 @@ public class ShapeController : MonoBehaviour {
     private bool isReleasedThisFrame = false;
     private bool isDoubleTouchedThisFrame = false;
 
-    private bool isMirrored = false;
-
     private GameController gameController;
+
+    private List<GridCoord> originalCoords;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start() {
@@ -76,10 +76,7 @@ public class ShapeController : MonoBehaviour {
         isDoubleTouchedThisFrame = false;
     }
 
-    public void ResetMirror() {
-        if (!isMirrored) return;
-
-        Mirror();
+    public void Reset() {
     }
 
     public void Rotate() {
