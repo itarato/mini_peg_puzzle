@@ -39,7 +39,6 @@ public class PegController : MonoBehaviour {
         if (isHit && (hit.transform == transform || hit.transform.IsChildOf(transform))) {
             if (Mouse.current.leftButton.wasPressedThisFrame) {
                 isDragging = true;
-                //Debug.Log("Drag start");
 
                 if (dragPlane.Raycast(ray, out float distance)) {
                     Vector3 point = ray.GetPoint(distance);
@@ -69,7 +68,6 @@ public class PegController : MonoBehaviour {
 
         if (Mouse.current.leftButton.wasReleasedThisFrame) {
             isDragging = false;
-            //Debug.Log("Drag end");
             AdjustToGrid();
         }
     }
