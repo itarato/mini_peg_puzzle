@@ -29,7 +29,8 @@ public class ShapeController : MonoBehaviour {
     private ShapeUnitController lastTouchedUnit;
     private bool isTouchedThisFrame = false;
     private bool isReleasedThisFrame = false;
-    private bool isDoubleTouchedThisFrame = false;
+    private bool shouldRotate = false;
+    private bool shouldMirror = false;
 
     private GameController gameController;
 
@@ -50,11 +51,14 @@ public class ShapeController : MonoBehaviour {
     void Update() {
         HandleTouchOperations();
 
-        if (isDoubleTouchedThisFrame) Rotate();
+        if (shouldRotate) Rotate();
+        if (shouldMirror) Mirror();
 
         isReleasedThisFrame = false;
         isTouchedThisFrame = false;
-        isDoubleTouchedThisFrame = false;
+        
+        shouldRotate = false;
+        shouldMirror = false;
     }
 
     public void Reset() {
@@ -103,7 +107,7 @@ public class ShapeController : MonoBehaviour {
         Vector3 diff = new Vector3(unitPos.x - unitPos.z, defaultY, unitPos.x + unitPos.z);
         Vector3 targetPosition = transform.position + diff;
 
-        StartCoroutine(RotateRoutine(targetRotation, targetPosition, 0.2f));
+        StartCoroutine(RotateRoutine(targetRotation, targetPosition, 0.1f));
     }
 
     public void Mirror() {
@@ -157,20 +161,17 @@ public class ShapeController : MonoBehaviour {
         AdjustToGrid();
     }
 
-    public void OnUnitTouch(ShapeUnitController unit, bool isDouble) {
+    public void OnUnitTouch(ShapeUnitController unit) {
         gameController.SetLastTouchedShape(this);
-
-        if (isDouble) {
-            isDoubleTouchedThisFrame = true;
-        } else {
-            isTouchedThisFrame = true;
-        }
-
+        isTouchedThisFrame = true;
         lastTouchedUnit = unit;
     }
 
-    public void OnUnitRelease() {
+    public void OnUnitRelease(TouchKind touchKind) {
         isReleasedThisFrame = true;
+
+        if (touchKind == TouchKind.Short) shouldRotate = true;
+        if (touchKind == TouchKind.Long) shouldMirror = true;
     }
 
     private Vector3 GetCurrentMouseWorldPoint() {

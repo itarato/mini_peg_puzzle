@@ -1,9 +1,11 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class ShapeUnitController : MonoBehaviour {
     ShapeController parentShape;
 
-    private float[] touchTimes = { 0f, 0f };
+    private float touchTime = 0f;
+    private Vector2 touchPos = Vector3.zero;
 
     const float doubleClickThreshold = 0.3f;
 
@@ -14,19 +16,28 @@ public class ShapeUnitController : MonoBehaviour {
     }
 
     private void OnMouseDown() {
-        touchTimes[1] = touchTimes[0];
-        touchTimes[0] = Time.time;
+        touchTime = Time.time;
+        touchPos = TouchPosition();
 
-        if (touchTimes[0] - touchTimes[1] < doubleClickThreshold) {
-            parentShape.OnUnitTouch(this, true);
-            touchTimes[0] = 0f;
+        parentShape.OnUnitTouch(this);
+    }
+
+    private Vector2 TouchPosition() {
+        Vector3 pos;
+        if (Touchscreen.current != null && (Touchscreen.current.press.wasPressedThisFrame || Touchscreen.current.press.wasReleasedThisFrame)) {
+            pos = Touchscreen.current.primaryTouch.position.ReadValue();
         } else {
-            parentShape.OnUnitTouch(this, false);
+            pos = Mouse.current.position.ReadValue();
         }
+
+        return new Vector2(pos.x, pos.z);
     }
 
     private void OnMouseUp() {
-        parentShape.OnUnitRelease();
+        float touchDistance = Vector2.Distance(TouchPosition(), touchPos);
+        float touchLifespan = Time.time - touchTime;
+
+        parentShape.OnUnitRelease(Util.CreateTouch(touchLifespan, touchDistance));
     }
 
     public void SetParent(ShapeController parentShape) {

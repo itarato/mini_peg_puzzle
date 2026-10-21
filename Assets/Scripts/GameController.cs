@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.IO;
 using System;
+using System.Security.Cryptography;
 
 public class GameController : MonoBehaviour {
     public GameObject shapePrefab;
@@ -169,5 +170,12 @@ public class GameController : MonoBehaviour {
         foreach (GameObject shape in shapes) {
             shape.GetComponent<ShapeController>().SetHighlight(false);
         }
+    }
+
+    public void SetupFreeMode() {
+        foreach (var peg in pegs) {
+            peg.GetComponent<PegController>().SetFreeMove();
+        }
+        ResetShapePositions();
     }
 }

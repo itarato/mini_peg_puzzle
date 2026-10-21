@@ -137,4 +137,8 @@ public class PegController : MonoBehaviour {
         transform.position = new Vector3(position.x, defaultY, position.z);
         isFixed = true;
     }
+
+    public void SetFreeMove() {
+        isFixed = false;
+    }
 }
