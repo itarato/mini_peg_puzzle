@@ -1,17 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PegController : MonoBehaviour {
     public GameObject peg;
 
     private List<GridPath> availablePaths;
-    public const float defaultY = 0f;
 
     private bool isDragging = false;
-    private bool isHovering = false;
-    private Plane dragPlane = new Plane(Vector3.up, new Vector3(0f, defaultY, 0f));
     private Vector3 dragOffset = Vector3.zero;
+    private bool isTouchedThisFrame = false;
+    private bool isReleasedThisFrame = false;
 
     private bool isFixed = false;
 
@@ -19,62 +17,53 @@ public class PegController : MonoBehaviour {
         this.availablePaths = availablePaths;
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start() {
 
     }
 
-    // Update is called once per frame
     void Update() {
         HandleMouseOperations();
+
+        isTouchedThisFrame = false;
+        isReleasedThisFrame = false;
+    }
+
+    private void OnMouseDown() {
+        isTouchedThisFrame = true;
+    }
+
+    private void OnMouseUp() {
+        isReleasedThisFrame = true;
     }
 
     private void HandleMouseOperations() {
         if (isFixed) return;
 
-        Vector2 mousePosition = Mouse.current.position.ReadValue();
-        Ray ray = Camera.main.ScreenPointToRay(mousePosition);
-        bool isHit = Physics.Raycast(ray, out RaycastHit hit);
+        if (isTouchedThisFrame) {
+            isDragging = true;
+            Vector3 mouseWorldPoint = Util.GetCurrentMouseWorldPoint();
+            dragOffset = transform.position - mouseWorldPoint;
+            dragOffset.y = 0f;
+            SetHighlight(true);
+        }
 
-        if (isHit && (hit.transform == transform || hit.transform.IsChildOf(transform))) {
-            if (Mouse.current.leftButton.wasPressedThisFrame) {
-                isDragging = true;
-
-                if (dragPlane.Raycast(ray, out float distance)) {
-                    Vector3 point = ray.GetPoint(distance);
-                    dragOffset = transform.position - point;
-                    dragOffset.y = 0f;
-                }
-            }
-
-            if (!isHovering) {
-                SetHighlight(true);
-                isHovering = true;
-            }
-        } else if (isHovering && !isDragging) {
+        if (isReleasedThisFrame) {
             SetHighlight(false);
-            isHovering = false;
-        }
-
-
-        if (isDragging && Mouse.current.leftButton.isPressed) {
-            if (dragPlane.Raycast(ray, out float distance)) {
-                Vector3 point = ray.GetPoint(distance);
-                Vector3 newPositionCandidate = point + dragOffset;
-
-                transform.position = GetOnLinePositionForCandidate(newPositionCandidate);
-            }
-        }
-
-        if (Mouse.current.leftButton.wasReleasedThisFrame) {
             isDragging = false;
             AdjustToGrid();
+        }
+
+        if (isDragging) {
+            Vector3 mouseWorldPoint = Util.GetCurrentMouseWorldPoint();
+            transform.position = GetOnLinePositionForCandidate(mouseWorldPoint + dragOffset);
         }
     }
 
     private Vector3 GetOnLinePositionForCandidate(Vector3 targetPosition) {
         targetPosition = NormalizePosition(targetPosition);
         List<GridPath> availablePathsForPosition = GetAvailablePathsForPosition(transform.position);
+
+        if (availablePathsForPosition.Count == 0) Debug.Log("NO MATCH | POS: " + transform.position);
         
         Vector3 outPosition = transform.position;
         float closestDistance = float.MaxValue;
@@ -118,7 +107,7 @@ public class PegController : MonoBehaviour {
         Renderer renderer = peg.GetComponent<Renderer>();
         if (renderer != null) {
             if (highlight) {
-                renderer.material.color = Color.yellow;
+                renderer.material.color = Color.orange;
             } else {
                 renderer.material.color = Color.white;
             }
@@ -126,7 +115,7 @@ public class PegController : MonoBehaviour {
     }
 
     private void AdjustToGrid() {
-        transform.position = new Vector3(Mathf.Round(transform.position.x), defaultY, Mathf.Round(transform.position.z));
+        transform.position = new Vector3(Mathf.Round(transform.position.x), Util.defaultY, Mathf.Round(transform.position.z));
     }
 
     public GridCoord GridPosition() {
@@ -134,7 +123,7 @@ public class PegController : MonoBehaviour {
     }
 
     public void SetFixedPosition(GridCoord position) {
-        transform.position = new Vector3(position.x, defaultY, position.z);
+        transform.position = new Vector3(position.x, Util.defaultY, position.z);
         isFixed = true;
     }
 

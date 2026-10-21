@@ -36,4 +36,8 @@ public class GridPath
 
         throw new System.Exception("Path is not straight");
     }
+
+    public override string ToString() {
+        return "[" + start + ".." + end + "]";
+    }
 }

@@ -21,4 +21,8 @@ public class GridCoord : IEquatable<GridCoord> {
     public override int GetHashCode() {
         return HashCode.Combine(x, z);
     }
+
+    public override string ToString() {
+        return "[" + x + ":" + z + "]";
+    }
 }
