@@ -98,6 +98,9 @@ public class ShapeController : MonoBehaviour {
     }
 
     public void Rotate() {
+        //RotateWithoutAnimationInPlace();
+        //return;
+
         Quaternion targetRotation = transform.rotation * Quaternion.Euler(0f, 90f, 0f);
 
         Vector3 unitPos = lastTouchedUnit.transform.position - transform.position;
@@ -133,8 +136,6 @@ public class ShapeController : MonoBehaviour {
                 connector.transform.position.z
             );
         }
-
-        Debug.Log("Mirrored");
     }
 
     IEnumerator RotateRoutine(Quaternion targetRotation, Vector3 targetPosition, float time) {
@@ -184,6 +185,7 @@ public class ShapeController : MonoBehaviour {
 
         if (isReleasedThisFrame) {
             isDragging = false;
+            SetHighlight(false);
             AdjustToGrid();
         }
 
@@ -245,5 +247,46 @@ public class ShapeController : MonoBehaviour {
         } else {
             renderer.material = DefaultMaterial();
         }
+    }
+
+    private int Height() {
+        int min = int.MaxValue;
+        int max = int.MinValue;
+
+        foreach (var unit in units) {
+            min = Math.Min(min, Mathf.RoundToInt(unit.transform.position.z));
+            max = Math.Max(max, Mathf.RoundToInt(unit.transform.position.z));
+        }
+
+        return max - min + 1;
+    }
+
+    public void RotateWithoutAnimationInPlace() {
+        int h = Height();
+        Debug.Log("H = " + h);
+        transform.RotateAround(UpRightCorner(), Vector3.up, -90f);
+        transform.position = new Vector3(transform.position.x - (h - 1), transform.position.y, transform.position.z);
+    }
+
+    public Vector3 UpRightCorner() {
+        int minx = int.MaxValue;
+        int minz = int.MaxValue;
+
+        foreach (var unit in units) {
+            minx = Math.Min(minx, Mathf.RoundToInt(unit.transform.position.x));
+            minz = Math.Min(minz, Mathf.RoundToInt(unit.transform.position.z));
+        }
+
+        return new Vector3(minx, transform.position.y, minz);
+    }
+
+    public void ApplySource(ShapeSource source) {
+        if (source.rotation > 0) return;
+
+        transform.position = new Vector3(source.x, Util.defaultY, source.z);
+
+        for (int i = 0; i < source.rotation; i++) RotateWithoutAnimationInPlace();
+        
+        if (source.is_mirrored) Mirror();
     }
 }

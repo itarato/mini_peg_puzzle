@@ -1,8 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.IO;
-using System;
-using System.Security.Cryptography;
 
 public class GameController : MonoBehaviour {
     public GameObject shapePrefab;
@@ -10,16 +7,45 @@ public class GameController : MonoBehaviour {
 
     private List<GameObject> shapes = new List<GameObject>();
     private List<GameObject> pegs = new List<GameObject>();
-
     private ShapeController lastTouchedShape;
+    private int hintCount = 0;
+    private List<ShapeSource> solution = new List<ShapeSource>();
 
     private List<List<GridCoord>> shapeCoords = new List<List<GridCoord>> {
-        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(0, 1), new GridCoord(0, 2) }, // L shape
-        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(0, 1) }, // Mini L shape
-        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(0, 1), new GridCoord(0, 2) }, // Line shape
-        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(1, 1), new GridCoord(2, 1) }, // Snake shape
-        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(0, 1), new GridCoord(1, 1) }, // Square shape
-        new List<GridCoord> { new GridCoord(0, 0), new GridCoord(1, 0), new GridCoord(2, 0), new GridCoord(1, 1) }, // T shape
+        new List<GridCoord> {
+            new GridCoord(0, 0),
+            new GridCoord(1, 0),
+            new GridCoord(0, -1), 
+            new GridCoord(0, -2),
+        }, // L shape
+        new List<GridCoord> { 
+            new GridCoord(0, 0), 
+            new GridCoord(1, 0), 
+            new GridCoord(0, -1),
+        }, // Mini L shape
+        new List<GridCoord> { 
+            new GridCoord(0, 0), 
+            new GridCoord(0, -1), 
+            new GridCoord(0, -2),
+        }, // Line shape
+        new List<GridCoord> { 
+            new GridCoord(0, 0), 
+            new GridCoord(1, 0), 
+            new GridCoord(1, -1), 
+            new GridCoord(2, -1), 
+        }, // Snake shape
+        new List<GridCoord> { 
+            new GridCoord(0, 0), 
+            new GridCoord(1, 0), 
+            new GridCoord(0, -1), 
+            new GridCoord(1, -1), 
+        }, // Square shape
+        new List<GridCoord> { 
+            new GridCoord(0, 0), 
+            new GridCoord(1, 0), 
+            new GridCoord(2, 0),
+            new GridCoord(1, -1),
+        }, // T shape
     };
 
     private List<GridCoord> shapeStartPositions = new List<GridCoord> {
@@ -56,7 +82,8 @@ public class GameController : MonoBehaviour {
 
         EvaluateAllShapesPositions();
 
-        SetupRandomLevel();
+        //SetupRandomLevel();
+        SetupLevel(0);
     }
 
     public void SetLastTouchedShape(ShapeController shape) {
@@ -122,29 +149,37 @@ public class GameController : MonoBehaviour {
     }
 
     public void SetupLevel(int level) {
+        ResetShapePositions();
+
+        hintCount = 0;
+
         string encoded = LoadLevelString(level);
         string[] shape_parts_raw = encoded.Split(';');
 
-        //for (int i = 0; i < 6; i++) {
-        //    string[] shape_parts = shape_parts_raw[i].Split(',');
-        //    int x = int.Parse(shape_parts[0]);
-        //    int z = int.Parse(shape_parts[1]);
-        //    float rotation = float.Parse(shape_parts[2]);
-        //    ShapeController shapeController = shapes[i].GetComponent<ShapeController>();
-        //    //shapeController.SetGridPosition(new GridCoord(x, z));
-        //    //shapeController.SetRotation(rotation);
-        //}
+        solution.Clear();
+
+        for (int i = 0; i < 6; i++) {
+            string[] unit_parts_raw = shape_parts_raw[i].Split(',');
+            int x = int.Parse(unit_parts_raw[0]);
+            int z = int.Parse(unit_parts_raw[1]);
+            int rotation = int.Parse(unit_parts_raw[2]);
+            bool is_mirrored = unit_parts_raw[3] == "1";
+
+            ShapeSource source = new ShapeSource(i, x - 2, 2 - z, rotation, is_mirrored);
+            solution.Add(source);
+
+            shapes[i].GetComponent<ShapeController>().ApplySource(source);
+        }
 
         string[] peg_parts = shape_parts_raw[6].Split(',');
         for (int i = 0; i < 3; i++) {
             int mask = int.Parse(peg_parts[i]);
             int pegx = (mask % 5) - 2;
             int pegz = 2 - (mask / 5);
+
             PegController pegController = pegs[i].GetComponent<PegController>();
             pegController.SetFixedPosition(new GridCoord(pegx, pegz));
         }
-
-        ResetShapePositions();
     }
 
     private string LoadLevelString(int level) {
@@ -177,5 +212,18 @@ public class GameController : MonoBehaviour {
             peg.GetComponent<PegController>().SetFreeMove();
         }
         ResetShapePositions();
+    }
+
+    public void GiveHint() {
+        if (hintCount >= 6) return;
+
+        ResetShapePositions();
+
+        hintCount++;
+
+        for (int i = 0; i < hintCount; i++) {
+            ShapeSource source = solution[i];
+            shapes[source.index].GetComponent<ShapeController>().ApplySource(source);
+        }
     }
 }
