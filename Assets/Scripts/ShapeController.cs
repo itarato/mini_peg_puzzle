@@ -98,9 +98,6 @@ public class ShapeController : MonoBehaviour {
     }
 
     public void Rotate() {
-        //RotateWithoutAnimationInPlace();
-        //return;
-
         Quaternion targetRotation = transform.rotation * Quaternion.Euler(0f, 90f, 0f);
 
         Vector3 unitPos = lastTouchedUnit.transform.position - transform.position;
@@ -174,7 +171,7 @@ public class ShapeController : MonoBehaviour {
 
     private void HandleTouchOperations() {
         if (isTouchedThisFrame) {
-            gameController.ClearAllShapeHighlights();
+            gameController.ResetAllShapeMaterials();
 
             isDragging = true;
             Vector3 mouseWorldPoint = Util.GetCurrentMouseWorldPoint();
@@ -191,15 +188,13 @@ public class ShapeController : MonoBehaviour {
 
         if (isDragging) {
             Vector3 mouseWorldPoint = Util.GetCurrentMouseWorldPoint();
-            transform.position = mouseWorldPoint + dragOffset;
+            transform.position = mouseWorldPoint + dragOffset + Vector3.up;
         }
     }
 
     private void AdjustToGrid() {
         transform.position = new Vector3(Mathf.Round(transform.position.x), Util.defaultY, Mathf.Round(transform.position.z));
         OnShapePositionChanged?.Invoke(this);
-
-        // TODO: Adjust rotation - or prevent action during rotation!
     }
 
     public List<GridCoord> GridPositions() {
@@ -234,6 +229,12 @@ public class ShapeController : MonoBehaviour {
         UpdateMaterial();
     }
 
+    public void ResetMaterial() {
+        hasHighlight = false;
+        hasProblem = false;
+        UpdateMaterial();
+    }
+
     private void UpdateMaterial() {
         foreach (GameObject shape in units) ApplyMaterialOnRenderer(shape.GetComponent<Renderer>());
         foreach (GameObject connectors in connectors) ApplyMaterialOnRenderer(connectors.GetComponent<Renderer>());
@@ -264,8 +265,8 @@ public class ShapeController : MonoBehaviour {
     public void RotateWithoutAnimationInPlace() {
         int h = Height();
         Debug.Log("H = " + h);
-        transform.RotateAround(UpRightCorner(), Vector3.up, -90f);
-        transform.position = new Vector3(transform.position.x - (h - 1), transform.position.y, transform.position.z);
+        transform.RotateAround(UpRightCorner(), Vector3.up, 90f);
+        transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z + h - 1);
     }
 
     public Vector3 UpRightCorner() {
@@ -281,8 +282,6 @@ public class ShapeController : MonoBehaviour {
     }
 
     public void ApplySource(ShapeSource source) {
-        if (source.rotation > 0) return;
-
         transform.position = new Vector3(source.x, Util.defaultY, source.z);
 
         for (int i = 0; i < source.rotation; i++) RotateWithoutAnimationInPlace();

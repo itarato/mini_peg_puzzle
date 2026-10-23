@@ -49,12 +49,12 @@ public class GameController : MonoBehaviour {
     };
 
     private List<GridCoord> shapeStartPositions = new List<GridCoord> {
-        new GridCoord(-3, -6),
+        new GridCoord(-3, -4),
         new GridCoord(-1, 6),
-        new GridCoord(-3, 4),
+        new GridCoord(-3, 6),
         new GridCoord(-1, -5),
-        new GridCoord(2, -6),
-        new GridCoord(1, 4),
+        new GridCoord(2, -4),
+        new GridCoord(1, 5),
     };
 
     private List<List<GridPath>> pegCoords = new List<List<GridPath>> {
@@ -82,8 +82,7 @@ public class GameController : MonoBehaviour {
 
         EvaluateAllShapesPositions();
 
-        //SetupRandomLevel();
-        SetupLevel(0);
+        SetupRandomLevel();
     }
 
     public void SetLastTouchedShape(ShapeController shape) {
@@ -167,8 +166,6 @@ public class GameController : MonoBehaviour {
 
             ShapeSource source = new ShapeSource(i, x - 2, 2 - z, rotation, is_mirrored);
             solution.Add(source);
-
-            shapes[i].GetComponent<ShapeController>().ApplySource(source);
         }
 
         string[] peg_parts = shape_parts_raw[6].Split(',');
@@ -180,6 +177,8 @@ public class GameController : MonoBehaviour {
             PegController pegController = pegs[i].GetComponent<PegController>();
             pegController.SetFixedPosition(new GridCoord(pegx, pegz));
         }
+
+        ResetAllShapeMaterials();
     }
 
     private string LoadLevelString(int level) {
@@ -201,9 +200,9 @@ public class GameController : MonoBehaviour {
         lastTouchedShape.Mirror();
     }
 
-    public void ClearAllShapeHighlights() {
+    public void ResetAllShapeMaterials() {
         foreach (GameObject shape in shapes) {
-            shape.GetComponent<ShapeController>().SetHighlight(false);
+            shape.GetComponent<ShapeController>().ResetMaterial();
         }
     }
 
@@ -225,5 +224,7 @@ public class GameController : MonoBehaviour {
             ShapeSource source = solution[i];
             shapes[source.index].GetComponent<ShapeController>().ApplySource(source);
         }
+
+        ResetAllShapeMaterials();
     }
 }
