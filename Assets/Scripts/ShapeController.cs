@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class ShapeController : MonoBehaviour {
     public static event Action<ShapeController> OnShapePositionChanged;
@@ -11,8 +10,9 @@ public class ShapeController : MonoBehaviour {
     public GameObject connectorPrefab;
 
     public Material defaultMaterial;
-    public Material highlightMaterial;
-    public Material errorMaterial;
+
+    public Material highlightOutlineMaterial;
+    public Material errorOutlineMaterial;
 
     private bool hasProblem = false;
     private bool hasHighlight = false;
@@ -33,6 +33,8 @@ public class ShapeController : MonoBehaviour {
 
     private List<GridCoord> originalCoords;
 
+    private const float elevatedY = 1f;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start() {
         UpdateMaterial();
@@ -43,6 +45,8 @@ public class ShapeController : MonoBehaviour {
         originalCoords = coords;
 
         Reset();
+
+        ApplyMaterial(defaultMaterial, 0);
     }
 
     void Update() {
@@ -53,7 +57,7 @@ public class ShapeController : MonoBehaviour {
 
         isReleasedThisFrame = false;
         isTouchedThisFrame = false;
-        
+
         shouldRotate = false;
         shouldMirror = false;
     }
@@ -188,7 +192,7 @@ public class ShapeController : MonoBehaviour {
 
         if (isDragging) {
             Vector3 mouseWorldPoint = Util.GetCurrentMouseWorldPoint();
-            transform.position = mouseWorldPoint + dragOffset + Vector3.up;
+            transform.position = mouseWorldPoint + dragOffset + Vector3.up * elevatedY;
         }
     }
 
@@ -216,14 +220,6 @@ public class ShapeController : MonoBehaviour {
         UpdateMaterial();
     }
 
-    private Material DefaultMaterial() {
-        if (hasProblem) {
-            return errorMaterial;
-        } else {
-            return defaultMaterial;
-        }
-    }
-
     public void SetHighlight(bool highlight) {
         hasHighlight = highlight;
         UpdateMaterial();
@@ -235,18 +231,18 @@ public class ShapeController : MonoBehaviour {
         UpdateMaterial();
     }
 
-    private void UpdateMaterial() {
-        foreach (GameObject shape in units) ApplyMaterialOnRenderer(shape.GetComponent<Renderer>());
-        foreach (GameObject connectors in connectors) ApplyMaterialOnRenderer(connectors.GetComponent<Renderer>());
+    private void ApplyMaterial(Material material, int materialIndex) {
+        Util.ApplyMaterialToList(units, material, materialIndex);
+        Util.ApplyMaterialToList(connectors, material, materialIndex);
     }
 
-    private void ApplyMaterialOnRenderer(Renderer renderer) {
-        if (renderer == null) return;
-
-        if (hasHighlight) {
-            renderer.material = highlightMaterial;
+    private void UpdateMaterial() {
+        if (hasProblem) {
+            ApplyMaterial(errorOutlineMaterial, 1);
+        } else if (hasHighlight) {
+            ApplyMaterial(highlightOutlineMaterial, 1);
         } else {
-            renderer.material = DefaultMaterial();
+            ApplyMaterial(null, 1);
         }
     }
 
@@ -285,7 +281,7 @@ public class ShapeController : MonoBehaviour {
         transform.position = new Vector3(source.x, Util.defaultY, source.z);
 
         for (int i = 0; i < source.rotation; i++) RotateWithoutAnimationInPlace();
-        
+
         if (source.is_mirrored) Mirror();
     }
 }

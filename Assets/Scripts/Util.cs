@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -33,6 +34,20 @@ public class Util {
             }
         } else {
             return Mouse.current.position.ReadValue();
+        }
+    }
+
+    public static void ApplyMaterialToList(List<GameObject> gameObjects, Material material, int materialIndex) {
+        foreach (var gameObject in gameObjects) {
+            Renderer renderer = gameObject.GetComponent<Renderer>();
+            if (renderer == null) return;
+
+            Material[] materials = renderer.materials;
+
+            if (materials.Length <= materialIndex) System.Array.Resize(ref materials, materialIndex + 1);
+
+            materials[materialIndex] = material;
+            renderer.materials = materials;
         }
     }
 }
