@@ -114,6 +114,8 @@ public class GameController : MonoBehaviour {
     }
 
     private void EvaluateAllShapesPositions() {
+        bool isComplete = true;
+
         HashSet<GridCoord> pegCoords = new HashSet<GridCoord>();
         Dictionary<GridCoord, ShapeController> occupiedCoords = new Dictionary<GridCoord, ShapeController>();
 
@@ -124,8 +126,7 @@ public class GameController : MonoBehaviour {
 
         foreach (GameObject shape in shapes) {
             ShapeController shapeController = shape.GetComponent<ShapeController>();
-            if (shapeController == null) continue;
-
+            if (shapeController == null) return;
 
             shapeController.SetProblem(false);
 
@@ -133,13 +134,22 @@ public class GameController : MonoBehaviour {
                 if (occupiedCoords.ContainsKey(coord)) {
                     shapeController.SetProblem(true);
                     occupiedCoords[coord].SetProblem(true);
+
+                    isComplete = false;
                 } else {
-                    if (pegCoords.Contains(coord)) shapeController.SetProblem(true);
+                    if (pegCoords.Contains(coord)) {
+                        shapeController.SetProblem(true);
+                        isComplete = false;
+                    }
 
                     occupiedCoords.Add(coord, shapeController);
                 }
+
+                if (coord.x < -2 || coord.x > 2 || coord.z < -2 || coord.z > 2) isComplete = false;
             }
         }
+
+        if (isComplete) StartCompletionPhase();
     }
 
     public void SetupRandomLevel() {
@@ -226,5 +236,14 @@ public class GameController : MonoBehaviour {
         }
 
         ResetAllShapeMaterials();
+        EvaluateAllShapesPositions();
+    }
+
+    private void StartCompletionPhase() {
+        foreach (var shape in shapes) {
+            shape.GetComponent<ShapeController>().StartCompletionPhase();
+        }
+
+        Invoke(nameof(SetupRandomLevel), 2f);
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection.Metadata.Ecma335;
 using UnityEngine;
 
 public class ShapeController : MonoBehaviour {
@@ -13,6 +14,7 @@ public class ShapeController : MonoBehaviour {
 
     public Material highlightOutlineMaterial;
     public Material errorOutlineMaterial;
+    public Material celebrationMaterial;
 
     private bool hasProblem = false;
     private bool hasHighlight = false;
@@ -34,6 +36,8 @@ public class ShapeController : MonoBehaviour {
     private List<GridCoord> originalCoords;
 
     private const float elevatedY = 1f;
+
+    private bool isLocked = false;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start() {
@@ -74,7 +78,7 @@ public class ShapeController : MonoBehaviour {
         connectors.Clear();
 
         foreach (GridCoord coord in unitCoords) {
-            GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x, Util.defaultY, coord.z), Quaternion.identity);
+            GameObject shapeUnit = Instantiate(shapeUnitPrefab, new Vector3(coord.x, Util.defaultY, coord.z), Quaternion.Euler(90f, 0f, 0f));
             shapeUnit.transform.SetParent(transform, false);
             units.Add(shapeUnit);
 
@@ -99,6 +103,7 @@ public class ShapeController : MonoBehaviour {
         }
 
         AdjustToGrid();
+        isLocked = false;
     }
 
     public void Rotate() {
@@ -108,6 +113,7 @@ public class ShapeController : MonoBehaviour {
         Vector3 diff = new Vector3(unitPos.x - unitPos.z, Util.defaultY, unitPos.x + unitPos.z);
         Vector3 targetPosition = transform.position + diff;
 
+        isLocked = true;
         StartCoroutine(RotateRoutine(targetRotation, targetPosition, 0.1f));
     }
 
@@ -158,6 +164,7 @@ public class ShapeController : MonoBehaviour {
         transform.position = targetPosition;
 
         AdjustToGrid();
+        isLocked = false;
     }
 
     public void OnUnitTouch(ShapeUnitController unit) {
@@ -174,6 +181,8 @@ public class ShapeController : MonoBehaviour {
     }
 
     private void HandleTouchOperations() {
+        if (isLocked) return;
+
         if (isTouchedThisFrame) {
             gameController.ResetAllShapeMaterials();
 
@@ -216,8 +225,17 @@ public class ShapeController : MonoBehaviour {
 
 
     public void SetProblem(bool problem) {
+        if (hasProblem == problem) return;
+
         hasProblem = problem;
         UpdateMaterial();
+    }
+
+    public void StartCompletionPhase() {
+        isLocked = true;
+
+        ApplyMaterial(celebrationMaterial, 0);
+        ApplyMaterial(null, 1);
     }
 
     public void SetHighlight(bool highlight) {
