@@ -4,6 +4,7 @@ using System.Collections.Generic;
 public class GameController : MonoBehaviour {
     public GameObject shapePrefab;
     public GameObject pegPrefab;
+    public ParticleSystem completionParticleSystem;
 
     private List<GameObject> shapes = new List<GameObject>();
     private List<GameObject> pegs = new List<GameObject>();
@@ -63,11 +64,16 @@ public class GameController : MonoBehaviour {
         new List<GridPath> { new GridPath(-2, -1, -2, -2), new GridPath(-2, -2, 0, -2), new GridPath(0, -2, 0, 0), new GridPath(0, 0, 1, 0) },
     };
 
+    private Color currentColor = new Color(0.38f, 0.53f, 0.95f, 1f);
+    private bool isFreeMode = false;
+
     void Start() {
+        completionParticleSystem.Stop();
+
         for (int i = 0; i < shapeCoords.Count; i++) {
             GameObject shape = Instantiate(shapePrefab, new Vector3(shapeStartPositions[i].x, Util.defaultY, shapeStartPositions[i].z), Quaternion.identity);
             ShapeController shapeController = shape.GetComponent<ShapeController>();
-            shapeController.Init(shapeCoords[i], this);
+            shapeController.Init(shapeCoords[i], this, currentColor);
             shapes.Add(shape);
         }
 
@@ -114,6 +120,8 @@ public class GameController : MonoBehaviour {
     }
 
     private void EvaluateAllShapesPositions() {
+        if (pegs.Count != 3 || shapes.Count != 6) return;
+
         bool isComplete = true;
 
         HashSet<GridCoord> pegCoords = new HashSet<GridCoord>();
@@ -152,12 +160,18 @@ public class GameController : MonoBehaviour {
         if (isComplete) StartCompletionPhase();
     }
 
+    private void NewGame() {
+        completionParticleSystem.Stop();
+        SetupRandomLevel();
+    }
+
     public void SetupRandomLevel() {
         System.Random rand = new System.Random();
         SetupLevel(rand.Next(0, 6884));
     }
 
     public void SetupLevel(int level) {
+        isFreeMode = false;
         ResetShapePositions();
 
         hintCount = 0;
@@ -217,6 +231,7 @@ public class GameController : MonoBehaviour {
     }
 
     public void SetupFreeMode() {
+        isFreeMode = true;
         foreach (var peg in pegs) {
             peg.GetComponent<PegController>().SetFreeMove();
         }
@@ -224,6 +239,7 @@ public class GameController : MonoBehaviour {
     }
 
     public void GiveHint() {
+        if (isFreeMode) return;
         if (hintCount >= 6) return;
 
         ResetShapePositions();
@@ -240,10 +256,24 @@ public class GameController : MonoBehaviour {
     }
 
     private void StartCompletionPhase() {
+        completionParticleSystem.Play();
+
         foreach (var shape in shapes) {
             shape.GetComponent<ShapeController>().StartCompletionPhase();
         }
 
-        Invoke(nameof(SetupRandomLevel), 2f);
+        Invoke(nameof(NewGame), 3f);
+    }
+
+    public void ChangeShapeColors() {
+        System.Random rand = new System.Random();
+        currentColor = new Color(
+            (rand.Next(0, 200) + 55f) / 255f,
+            (rand.Next(0, 200) + 55f) / 255f,
+            (rand.Next(0, 200) + 55f) / 255f,
+            1f
+        );
+
+        foreach (var shape in shapes) shape.GetComponent<ShapeController>().ChangeColor(currentColor);
     }
 }

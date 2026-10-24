@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection.Metadata.Ecma335;
 using UnityEngine;
 
 public class ShapeController : MonoBehaviour {
@@ -10,7 +9,6 @@ public class ShapeController : MonoBehaviour {
     public GameObject shapeUnitPrefab;
     public GameObject connectorPrefab;
 
-    public Material defaultMaterial;
 
     public Material highlightOutlineMaterial;
     public Material errorOutlineMaterial;
@@ -38,19 +36,18 @@ public class ShapeController : MonoBehaviour {
     private const float elevatedY = 1f;
 
     private bool isLocked = false;
+    private Color color;
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start() {
         UpdateMaterial();
     }
 
-    public void Init(List<GridCoord> coords, GameController gameController) {
+    public void Init(List<GridCoord> coords, GameController gameController, Color color) {
+        this.color = color;
         this.gameController = gameController;
         originalCoords = coords;
 
         Reset();
-
-        ApplyMaterial(defaultMaterial, 0);
     }
 
     void Update() {
@@ -103,6 +100,7 @@ public class ShapeController : MonoBehaviour {
         }
 
         AdjustToGrid();
+        ChangeColor(color);
         isLocked = false;
     }
 
@@ -278,7 +276,6 @@ public class ShapeController : MonoBehaviour {
 
     public void RotateWithoutAnimationInPlace() {
         int h = Height();
-        Debug.Log("H = " + h);
         transform.RotateAround(UpRightCorner(), Vector3.up, 90f);
         transform.position = new Vector3(transform.position.x, transform.position.y, transform.position.z + h - 1);
     }
@@ -301,5 +298,11 @@ public class ShapeController : MonoBehaviour {
         for (int i = 0; i < source.rotation; i++) RotateWithoutAnimationInPlace();
 
         if (source.is_mirrored) Mirror();
+    }
+
+    public void ChangeColor(Color color) {
+        this.color = color;
+        Util.ChangeColor(units, color);
+        Util.ChangeColor(connectors, color);
     }
 }

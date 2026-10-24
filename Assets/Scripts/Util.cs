@@ -50,4 +50,14 @@ public class Util {
             renderer.materials = materials;
         }
     }
+
+    public static void ChangeColor(List<GameObject> gameObjects, Color color) {
+        if (color == null) return;
+
+        foreach (var gameObject in gameObjects) {
+            Renderer renderer = gameObject.GetComponent<Renderer>();
+            if (renderer == null) return;
+            renderer.material.color = color;
+        }
+    }
 }
