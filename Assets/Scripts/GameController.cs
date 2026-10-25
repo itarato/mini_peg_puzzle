@@ -70,6 +70,7 @@ public class GameController : MonoBehaviour {
 
     private Color currentColor = new Color(0.38f, 0.53f, 0.95f, 1f);
     private bool isFreeMode = false;
+    private bool haltEvaluations = false;
 
     void Start() {
         completionParticleSystem.Stop();
@@ -122,6 +123,9 @@ public class GameController : MonoBehaviour {
     }
 
     private void EvaluateAllShapesPositions() {
+        Debug.Log("evaluation");
+
+        if (haltEvaluations) return;
         if (pegs.Count != 3 || shapes.Count != 6) return;
 
         bool isComplete = true;
@@ -137,12 +141,16 @@ public class GameController : MonoBehaviour {
 
         foreach (GameObject shape in shapes) {
             ShapeController shapeController = shape.GetComponent<ShapeController>();
-            if (shapeController == null) return;
+            if (shapeController == null) {
+                Debug.Log("missing controller");
+                return;
+            }
 
             shapeController.SetProblem(false);
 
             foreach (GridCoord coord in shapeController.GridPositions()) {
                 if (occupiedCoords.ContainsKey(coord)) {
+                    Debug.Log("collide with shape");
                     shapeController.SetProblem(true);
                     hadError = true;
                     occupiedCoords[coord].SetProblem(true);
@@ -150,6 +158,7 @@ public class GameController : MonoBehaviour {
                     isComplete = false;
                 } else {
                     if (pegCoords.Contains(coord)) {
+                        Debug.Log("collide with peg");
                         shapeController.SetProblem(true);
                         hadError = true;
                         isComplete = false;
@@ -254,6 +263,8 @@ public class GameController : MonoBehaviour {
         if (isFreeMode) return;
         if (hintCount >= 6) return;
 
+        haltEvaluations = true;
+
         ResetShapePositions();
 
         hintCount++;
@@ -264,6 +275,8 @@ public class GameController : MonoBehaviour {
         }
 
         ResetAllShapeMaterials();
+
+        haltEvaluations = false;
         EvaluateAllShapesPositions();
     }
 
