@@ -5,6 +5,10 @@ public class GameController : MonoBehaviour {
     public GameObject shapePrefab;
     public GameObject pegPrefab;
     public ParticleSystem completionParticleSystem;
+    public AudioSource completionAudioSource;
+    public AudioSource tapAudioSource;
+    public AudioSource errorAudioSource;
+    public AudioSource newLevelAudioSource;
 
     private List<GameObject> shapes = new List<GameObject>();
     private List<GameObject> pegs = new List<GameObject>();
@@ -86,8 +90,6 @@ public class GameController : MonoBehaviour {
 
         lastTouchedShape = shapes[0].GetComponent<ShapeController>();
 
-        EvaluateAllShapesPositions();
-
         SetupRandomLevel();
     }
 
@@ -123,6 +125,7 @@ public class GameController : MonoBehaviour {
         if (pegs.Count != 3 || shapes.Count != 6) return;
 
         bool isComplete = true;
+        bool hadError = false;
 
         HashSet<GridCoord> pegCoords = new HashSet<GridCoord>();
         Dictionary<GridCoord, ShapeController> occupiedCoords = new Dictionary<GridCoord, ShapeController>();
@@ -141,12 +144,14 @@ public class GameController : MonoBehaviour {
             foreach (GridCoord coord in shapeController.GridPositions()) {
                 if (occupiedCoords.ContainsKey(coord)) {
                     shapeController.SetProblem(true);
+                    hadError = true;
                     occupiedCoords[coord].SetProblem(true);
 
                     isComplete = false;
                 } else {
                     if (pegCoords.Contains(coord)) {
                         shapeController.SetProblem(true);
+                        hadError = true;
                         isComplete = false;
                     }
 
@@ -158,6 +163,12 @@ public class GameController : MonoBehaviour {
         }
 
         if (isComplete) StartCompletionPhase();
+
+        if (hadError) {
+            errorAudioSource.Play();
+        } else {
+            tapAudioSource.Play();
+        }
     }
 
     private void NewGame() {
@@ -173,6 +184,7 @@ public class GameController : MonoBehaviour {
     public void SetupLevel(int level) {
         isFreeMode = false;
         ResetShapePositions();
+        newLevelAudioSource.Play();
 
         hintCount = 0;
 
@@ -256,6 +268,7 @@ public class GameController : MonoBehaviour {
     }
 
     private void StartCompletionPhase() {
+        completionAudioSource.Play();
         completionParticleSystem.Play();
 
         foreach (var shape in shapes) {

@@ -233,7 +233,12 @@ public class ShapeController : MonoBehaviour {
         isLocked = true;
 
         ApplyMaterial(celebrationMaterial, 0);
-        ApplyMaterial(null, 1);
+        RemoveSecondMaterial();
+    }
+
+    public void RemoveSecondMaterial() {
+        Util.RemoveSecondMaterial(units);
+        Util.RemoveSecondMaterial(connectors);
     }
 
     public void SetHighlight(bool highlight) {
@@ -258,7 +263,7 @@ public class ShapeController : MonoBehaviour {
         } else if (hasHighlight) {
             ApplyMaterial(highlightOutlineMaterial, 1);
         } else {
-            ApplyMaterial(null, 1);
+            RemoveSecondMaterial();
         }
     }
 
